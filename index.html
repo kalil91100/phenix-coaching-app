@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PHÉNIX · Live</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0B1220">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PHÉNIX">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js">
+  </script>
+  <style>
+    /* ===== RESET & BASE ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --ink: #0B1220;
+      --ink-2: #121C2B;
+      --ink-3: #1B2740;
+      --ember: #FF4D2E;
+      --flare: #FFB13D;
+      --pulse: #FF2E7E;
+      --paper: #FFF3E4;
+      --paper-dim: #C9C2B8;
+      --font-display: 'Anton', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'Space Mono', monospace;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    body {
+      background: var(--ink);
+      color: var(--paper);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0 20px;
+      width: 100%;
+    }
+
+    /* ===== SPLASH / INTRO ===== */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: var(--ink);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      transition: opacity 0.6s ease, visibility 0.6s ease;
+    }
+    #splash.hide {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .splash-logo {
+      font-family: var(--font-display);
+      font-size: 48px;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .splash-logo .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--flare), var(--ember));
+      box-shadow: 0 0 30px var(--ember);
+      animation: pulse-dot 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.8;
+      }
+      50% {
+        transform: scale(1.2);
+        opacity: 1;
+      }
+    }
+    .splash-sub {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--paper-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      opacity: 0.6;
+    }
+    .splash-loader {
+      margin-top: 20px;
+      width: 40px;
+      height: 40px;
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-top-color: var(--flare);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ===== NAV ===== */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(11, 18, 32, 0.85);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding: 10px 0;
+    }
+    .nav .wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-logo .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, var(--flare), var(--ember));
+      box-shadow: 0 0 12px var(--ember);
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-actions .member-badge {
+      font-size: 13px;
+      color: var(--paper-dim);
+      background: var(--ink-3);
+      padding: 4px 12px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: none;
+    }
+    .nav-actions .member-badge.show {
+      display: block;
+    }
+    .nav-actions .logout-btn {
+      background: none;
+      border: none;
+      color: var(--paper-dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      cursor: pointer;
+      padding: 4px 8px;
+      display: none;
+    }
+    .nav-actions .logout-btn.show {
+      display: block;
+    }
+    .nav-actions .logout-btn:hover {
+      color: var(--paper);
+    }
+
+    /* Indicateur admin dans la nav */
+    .nav-actions .admin-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--flare);
+      background: rgba(255, 177, 61, 0.12);
+      border: 1px solid rgba(255, 177, 61, 0.3);
+      padding: 2px 10px;
+      border-radius: 100px;
+      display: none;
+    }
+    .nav-actions .admin-badge.show {
+      display: block;
+    }
+
+    /* ===== HERO ===== */
+    .hero {
+      padding: 20px 0 10px;
+      text-align: center;
+      position: relative;
+    }
+    .flame-glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      width: 400px;
+      height: 400px;
+      transform: translateX(-50%);
+      background:
+        radial-gradient(circle at 40% 60%, var(--ember) 0%, transparent 55%),
+        radial-gradient(circle at 65% 35%, var(--flare) 0%, transparent 50%);
+      filter: blur(60px);
+      opacity: 0.4;
+      animation: breathe 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes breathe {
+      0%,
+      100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 0.4;
+      }
+      50% {
+        transform: translateX(-50%) scale(1.1);
+        opacity: 0.6;
+      }
+    }
+    .hero h1 {
+      position: relative;
+      font-family: var(--font-display);
+      font-size: clamp(32px, 12vw, 52px);
+      text-transform: uppercase;
+      line-height: 1.05;
+      letter-spacing: 0.5px;
+    }
+    .hero h1 .highlight {
+      background: linear-gradient(100deg, var(--flare), var(--ember));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero .sub {
+      position: relative;
+      font-size: 15px;
+      color: var(--paper-dim);
+      margin-top: 8px;
+      max-width: 30ch;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* ===== SALON LIVE ===== */
+    .live-section {
+      padding: 10px 0 20px;
+      width: 100%;
+    }
+    .live-section .wrap {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .live-frame-wrap {
+      border-radius: 16px;
+      overflow: hidden;
+      background: #070B14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    /* Écran d'accueil avant de rejoindre */
+    .lk-prejoin {
+      aspect-ratio: 9/13;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      padding: 24px;
+      background: radial-gradient(circle at center, rgba(255, 177, 61, 0.08), transparent 70%);
+    }
+    .lk-prejoin .live-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .lk-prejoin .live-title .flame {
+      background: linear-gradient(100deg, var(--flare), var(--ember));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .lk-prejoin .auth-status {
+      font-size: 13px;
+      color: var(--paper-dim);
+      background: var(--ink-3);
+      padding: 8px 16px;
+      border-radius: 100px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .lk-prejoin .auth-status .highlight {
+      color: var(--flare);
+      font-weight: 700;
+    }
+
+    .lk-prejoin .btn-join {
+      width: 100%;
+      max-width: 280px;
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--ink);
+      background: linear-gradient(100deg, var(--flare), var(--ember));
+      padding: 16px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 24px -8px rgba(255, 77, 46, 0.5);
+      transition: transform 0.15s;
+    }
+    .lk-prejoin .btn-join:active {
+      transform: scale(0.97);
+    }
+    .lk-prejoin .btn-join:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .lk-prejoin .btn-join.btn-secondary {
+      background: var(--ink-3);
+      color: var(--paper-dim);
+      box-shadow: none;
+    }
+    .lk-prejoin .live-note {
+      font-size: 12px;
+      color: var(--paper-dim);
+      max-width: 30ch;
+    }
+    .lk-error {
+      color: var(--pulse);
+      font-size: 13px;
+      display: none;
+    }
+    .lk-error.show {
+      display: block;
+    }
+
+    /* Salle en direct */
+    .lk-room {
+      display: none;
+    }
+    .lk-room.active {
+      display: block;
+    }
+
+    .lk-stage {
+      position: relative;
+      aspect-ratio: 3/4;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .lk-stage video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .lk-stage-empty {
+      color: var(--paper-dim);
+      font-size: 13px;
+      font-family: var(--font-mono);
+    }
+    .lk-stage-name {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 5;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--paper);
+      background: rgba(0, 0, 0, 0.5);
+      padding: 5px 10px;
+      border-radius: 100px;
+      display: none;
+    }
+
+    .lk-filmstrip {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      overflow-x: auto;
+      background: var(--ink-2);
+    }
+    .lk-tile {
+      flex: none;
+      width: 84px;
+      height: 112px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+    }
+    .lk-tile video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .lk-tile .lk-tile-name {
+      position: absolute;
+      left: 4px;
+      bottom: 4px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--paper);
+      background: rgba(0, 0, 0, 0.55);
+      padding: 2px 6px;
+      border-radius: 100px;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .lk-controls {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      background: var(--ink-2);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      align-items: center;
+    }
+    .lk-ctrl-btn {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: var(--ink-3);
+      color: var(--paper);
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #lk-mic-btn,
+    #lk-cam-btn {
+      flex: none;
+      width: 42px;
+      height: 42px;
+      padding: 0;
+    }
+    .lk-ctrl-btn.off {
+      background: rgba(255, 46, 126, 0.2);
+      color: #FF7FAE;
+    }
+    .lk-ctrl-btn.leave {
+      flex: 1;
+      background: linear-gradient(100deg, var(--pulse), var(--ember));
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 700;
+      gap: 6px;
+    }
+
+    /* Timer overlay */
+    .lk-timer-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      z-index: 6;
+      background: rgba(11, 18, 32, 0.82);
+      backdrop-filter: blur(6px);
+      border-radius: 14px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: none;
+    }
+    .lk-timer-overlay.show {
+      display: block;
+    }
+    .lk-timer-overlay.tw-work {
+      border-color: rgba(255, 77, 46, 0.4);
+    }
+    .lk-timer-overlay.tw-rest {
+      border-color: rgba(61, 220, 151, 0.4);
+    }
+    .lk-timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .lk-timer-phase {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      padding: 3px 9px;
+      border-radius: 100px;
+      flex: none;
+    }
+    .tw-work .lk-timer-phase {
+      background: rgba(255, 77, 46, 0.25);
+      color: #FFB199;
+    }
+    .tw-rest .lk-timer-phase {
+      background: rgba(61, 220, 151, 0.22);
+      color: #A6F0D3;
+    }
+    .lk-timer-name {
+      font-family: var(--font-display);
+      font-size: 14px;
+      text-transform: uppercase;
+      flex: 1;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lk-timer-count {
+      font-family: var(--font-display);
+      font-size: 26px;
+      flex: none;
+      font-variant-numeric: tabular-nums;
+    }
+    .tw-work .lk-timer-count {
+      color: var(--paper);
+    }
+    .tw-rest .lk-timer-count {
+      color: #3DDC97;
+    }
+
+    /* ===== PANEL ADMIN (coach) ===== */
+    .lk-coach-panels {
+      display: none;
+      flex-direction: column;
+      background: var(--ink-2);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .lk-coach-panels.show {
+      display: flex;
+    }
+
+    .lk-timer-admin {
+      padding: 14px;
+    }
+    .lk-timer-admin h4 {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.6px;
+      color: var(--flare);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .lk-preset-select {
+      width: 100%;
+      background: var(--ink-3);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 13.5px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+    .lk-ta-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    .lk-ta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--ink-3);
+      border-radius: 9px;
+      padding: 7px 9px;
+      font-size: 12px;
+    }
+    .lk-ta-item b {
+      flex: 1;
+    }
+    .lk-ta-item span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--paper-dim);
+    }
+    .lk-ta-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .lk-ta-controls button {
+      font-size: 12.5px;
+      padding: 9px 12px;
+    }
+    .lk-ta-rounds {
+      font-size: 11.5px;
+      color: var(--paper-dim);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: none;
+    }
+    .lk-ta-rounds input {
+      width: 40px;
+      text-align: center;
+      background: var(--ink-3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--paper);
+      border-radius: 7px;
+      padding: 7px 3px;
+    }
+
+    .lk-music {
+      padding: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .lk-music h4 {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      letter-spacing: 0.6px;
+      color: var(--flare);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .lk-music-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .lk-music-title {
+      flex: 1;
+      font-size: 12.5px;
+      color: var(--paper);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .lk-music-vol {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .lk-music-vol input {
+      flex: 1;
+      min-width: 0;
+    }
+    .btn-secondary {
+      background: var(--ink-3);
+      color: var(--paper-dim);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 9px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: var(--font-body);
+    }
+    .btn-primary-sm {
+      background: linear-gradient(100deg, var(--flare), var(--ember));
+      color: var(--ink);
+      border: none;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ===== MODALE INSCRIPTION / CONNEXION ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(5, 8, 14, 0.8);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-box {
+      background: var(--ink-2);
+      width: 100%;
+      max-width: 420px;
+      border-radius: 24px;
+      padding: 28px 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-box h3 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .modal-box .modal-sub {
+      font-size: 14px;
+      color: var(--paper-dim);
+      margin-bottom: 18px;
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .modal-tab {
+      flex: 1;
+      background: var(--ink-3);
+      border: none;
+      color: var(--paper-dim);
+      font-family: var(--font-body);
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .modal-tab.active {
+      background: linear-gradient(100deg, var(--flare), var(--ember));
+      color: var(--ink);
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .modal-form input {
+      background: var(--ink-3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--paper);
+      font-family: var(--font-body);
+      font-size: 14.5px;
+      padding: 13px 14px;
+      border-radius: 10px;
+      width: 100%;
+    }
+    .modal-form input::placeholder {
+      color: var(--paper-dim);
+    }
+    .modal-form input:focus {
+      outline: 2px solid var(--ember);
+    }
+    .modal-form .btn-primary {
+      font-family: var(--font-body);
+      font-weight: 800;
+      font-size: 16px;
+      text-align: center;
+      color: var(--ink);
+      background: linear-gradient(100deg, var(--flare), var(--ember));
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 8px 24px -8px rgba(255, 77, 46, 0.4);
+    }
+    .modal-error {
+      color: var(--pulse);
+      font-size: 13px;
+      margin-top: 8px;
+      display: none;
+    }
+    .modal-error.show {
+      display: block;
+    }
+    .modal-close {
+      display: block;
+      width: 100%;
+      text-align: center;
+      margin-top: 14px;
+      background: none;
+      border: none;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--paper-dim);
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    /* ===== PLUS D'INFOS (section secondaire) ===== */
+    .info-section {
+      padding: 30px 0 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 10px;
+    }
+    .info-section .wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .info-section .info-title {
+      font-family: var(--font-display);
+      font-size: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-section .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .info-card {
+      background: var(--ink-2);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .info-card h4 {
+      font-family: var(--font-display);
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+    }
+    .info-card p {
+      font-size: 13px;
+      color: var(--paper-dim);
+      line-height: 1.5;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      padding: 20px 0 30px;
+      text-align: center;
+      margin-top: auto;
+    }
+    footer p {
+      font-size: 12px;
+      color: var(--paper-dim);
+      opacity: 0.5;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (min-width: 700px) {
+      .wrap {
+        max-width: 640px;
+      }
+      .lk-prejoin {
+        aspect-ratio: 16/9;
+      }
+      .lk-stage {
+        aspect-ratio: 16/9;
+      }
+      .info-section .info-grid {
+        grid-template-columns: 1fr 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .hero h1 {
+        font-size: 28px;
+      }
+      .lk-prejoin .live-title {
+        font-size: 22px;
+      }
+      .modal-box {
+        padding: 20px 16px;
+      }
+    }
+
+    /* ===== MODE PLEIN ÉCRAN PENDANT L'APPEL ===== */
+    body.lk-call-active {
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+    }
+    body.lk-call-active .nav {
+      display: none !important;
+    }
+    body.lk-call-active .hero {
+      display: none !important;
+    }
+    body.lk-call-active .live-section .wrap {
+      max-width: none;
+      padding: 0;
+    }
+    body.lk-call-active #live-frame-wrap {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      max-width: none;
+      margin: 0;
+      border-radius: 0;
+      border: none;
+      overflow: hidden;
+    }
+    body.lk-call-active .lk-room.active {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    body.lk-call-active .lk-stage {
+      flex: 1;
+      min-height: 0;
+      aspect-ratio: unset;
+      width: 100%;
+    }
+    body.lk-call-active .lk-filmstrip {
+      flex: none;
+    }
+    body.lk-call-active .lk-coach-panels {
+      flex: none;
+      max-height: 38dvh;
+      overflow-y: auto;
+    }
+    body.lk-call-active .lk-controls {
+      flex: none;
+    }
+    body.lk-call-active .info-section {
+      display: none !important;
+    }
+    body.lk-call-active footer {
+      display: none !important;
+    }
+
+    /* ===== MODE ADMIN ===== */
+    body.admin-mode .lk-prejoin .live-title::after {
+      content: ' 🔥 COACH';
+      font-size: 14px;
+      background: rgba(255, 177, 61, 0.15);
+      padding: 2px 12px;
+      border-radius: 100px;
+      margin-left: 8px;
+      color: var(--flare);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===== SPLASH SCREEN ===== -->
+  <div id="splash">
+    <div class="splash-logo">
+      <span class="dot"></span> PHÉNIX
+    </div>
+    <div class="splash-sub">Live · Communauté · Comeback</div>
+    <div class="splash-loader"></div>
+  </div>
+
+  <!-- ===== NAV ===== -->
+  <nav class="nav">
+    <div class="wrap">
+      <div class="nav-logo"><span class="dot"></span>PHÉNIX</div>
+      <div class="nav-actions">
+        <span class="admin-badge" id="admin-badge">👑 Coach</span>
+        <span class="member-badge" id="nav-member-badge">👤</span>
+        <button class="logout-btn" id="nav-logout-btn">Se déconnecter</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero">
+    <div class="flame-glow" aria-hidden="true"></div>
+    <div class="wrap">
+      <h1>Reprends <span class="highlight">ta place.</span><br>Maintenant.</h1>
+      <p class="sub">Entraîne-toi en communauté, en direct, avec moi.</p>
+    </div>
+  </section>
+
+  <!-- ===== SALON LIVE ===== -->
+  <section class="live-section" id="live-section">
+    <div class="wrap">
+      <div class="live-frame-wrap" id="live-frame-wrap" data-room="phenix-groupe-live">
+
+        <!-- Écran avant de rejoindre -->
+        <div class="lk-prejoin" id="lk-prejoin">
+          <div class="live-title"><span class="flame">●</span> LIVE</div>
+
+          <div class="auth-status" id="auth-status">
+            🔒 <span id="auth-status-text">Connecte-toi pour rejoindre</span>
+          </div>
+
+          <button class="btn-join" id="main-join-btn">🔥 Rejoindre la séance</button>
+          <p class="live-note">Caméra et micro seront demandés.</p>
+          <p class="lk-error" id="lk-error"></p>
+        </div>
+
+        <!-- Salle en direct -->
+        <div class="lk-room" id="lk-room">
+          <div class="lk-stage" id="lk-stage">
+            <div class="lk-stage-empty" id="lk-stage-empty">En attente du coach…</div>
+            <div class="lk-timer-overlay" id="lk-timer-overlay">
+              <div class="lk-timer-row">
+                <span class="lk-timer-phase" id="lk-timer-phase">TRAVAIL</span>
+                <span class="lk-timer-name" id="lk-timer-name">—</span>
+                <span class="lk-timer-count" id="lk-timer-count">00:00</span>
+              </div>
+            </div>
+            <div class="lk-stage-name" id="lk-stage-name"></div>
+          </div>
+
+          <div class="lk-filmstrip" id="lk-filmstrip"></div>
+
+          <!-- Panneaux coach -->
+          <div class="lk-coach-panels" id="lk-coach-panels">
+            <div class="lk-timer-admin" id="lk-timer-admin">
+              <h4>🎛️ Séance en cours</h4>
+              <select class="lk-preset-select" id="lk-preset-select"></select>
+              <div class="lk-ta-list" id="lk-preset-preview"></div>
+              <div class="lk-ta-controls">
+                <label class="lk-ta-rounds">Tours <input type="number" id="lk-ta-rounds" value="1" min="1"></label>
+                <button class="btn-primary-sm" id="lk-ta-start-btn" type="button">▶ Démarrer</button>
+              </div>
+              <div class="lk-ta-controls" id="lk-ta-run-controls" style="display:none; margin-top:8px;">
+                <button class="btn-secondary" id="lk-ta-pause-btn" type="button">⏸ Pause</button>
+                <button class="btn-secondary" id="lk-ta-skip-btn" type="button">⏭ Suivant</button>
+                <button class="btn-secondary" id="lk-ta-stop-btn" type="button">⏹ Arrêter</button>
+              </div>
+            </div>
+
+            <div class="lk-music" id="lk-music">
+              <h4>🎵 Musique</h4>
+              <div id="lk-music-idle">
+                <label class="btn-secondary" style="display:block; text-align:center; cursor:pointer;">
+                  📂 Choisir un fichier
+                  <input type="file" id="lk-music-input" accept="audio/*" style="display:none;">
+                </label>
+              </div>
+              <div id="lk-music-active" style="display:none;">
+                <div class="lk-music-row">
+                  <button class="lk-ctrl-btn" id="lk-music-play-btn" type="button" style="flex:none; width:36px; height:36px; padding:0;">⏸</button>
+                  <span class="lk-music-title" id="lk-music-title">—</span>
+                  <button class="lk-ctrl-btn off" id="lk-music-stop-btn" type="button" style="flex:none; width:36px; height:36px; padding:0;">✕</button>
+                </div>
+                <label class="lk-music-vol">🔊 <input type="range" id="lk-music-volume" min="0" max="100" value="50"></label>
+              </div>
+              <audio id="lk-music-el" loop style="display:none;"></audio>
+            </div>
+          </div>
+
+          <div class="lk-controls">
+            <button class="lk-ctrl-btn" id="lk-mic-btn" type="button">🎤</button>
+            <button class="lk-ctrl-btn" id="lk-cam-btn" type="button">📷</button>
+            <button class="lk-ctrl-btn leave" id="lk-leave-btn" type="button">🚪 Quitter</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MODALE INSCRIPTION / CONNEXION ===== -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-box">
+      <h3>🔥 PHÉNIX</h3>
+      <p class="modal-sub">Connecte-toi ou crée ton compte pour rejoindre la séance.</p>
+
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="login" type="button">Se connecter</button>
+        <button class="modal-tab" data-tab="signup" type="button">Créer un compte</button>
+      </div>
+
+      <form id="modal-login-form" class="modal-form">
+        <input type="email" id="modal-login-email" placeholder="E-mail" required autocomplete="email">
+        <input type="password" id="modal-login-password" placeholder="Mot de passe" required autocomplete="current-password">
+        <button class="btn-primary" type="submit">Se connecter</button>
+      </form>
+
+      <form id="modal-signup-form" class="modal-form" style="display:none;">
+        <input type="text" id="modal-signup-name" placeholder="Ton prénom" required autocomplete="given-name">
+        <input type="email" id="modal-signup-email" placeholder="E-mail" required autocomplete="email">
+        <input type="password" id="modal-signup-password" placeholder="Mot de passe (6 min.)" required autocomplete="new-password" minlength="6">
+        <button class="btn-primary" type="submit">Créer mon compte</button>
+      </form>
+
+      <p class="modal-error" id="modal-error"></p>
+      <button class="modal-close" id="modal-close-btn">Annuler</button>
+    </div>
+  </div>
+
+  <!-- ===== PLUS D'INFOS ===== -->
+  <section class="info-section" id="info-section">
+    <div class="wrap">
+      <div class="info-title">📖 Pourquoi PHÉNIX ?</div>
+      <div class="info-grid">
+        <div class="info-card">
+          <h4>Kindle</h4>
+          <p>Lundi · Cardio. On rallume la machine.</p>
+        </div>
+        <div class="info-card">
+          <h4>Bedrock</h4>
+          <p>Mercredi · Résistance. Le socle qui tient.</p>
+        </div>
+        <div class="info-card">
+          <h4>Ember</h4>
+          <p>Vendredi · Endurance. La braise qui dure.</p>
+        </div>
+        <div class="info-card">
+          <h4>En direct</h4>
+          <p>Pas de replay. Si t'es pas là, tu rates la séance.</p>
+        </div>
+        <div class="info-card">
+          <h4>Communauté</h4>
+          <p>On se relève ensemble. Chaque séance compte.</p>
+        </div>
+        <div class="info-card">
+          <h4>Zéro excuse</h4>
+          <p>Depuis ton téléphone, où que tu sois.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <p>PHÉNIX · Coaching sportif en direct</p>
+      <p style="margin-top:6px; font-size:10px; opacity:0.3;">Ctrl+Shift+A · Admin</p>
+    </div>
+  </footer>
+
+  <script>
+    /* ================================================================
+       CONFIGURATION
+    ================================================================ */
+    const CONFIG = {
+      ADMIN_PASSWORD: "4791",
+      SUPABASE_URL: "https://oifncoxlxwpdaacjsnza.supabase.co",
+      SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pZm5jb3hseHdwZGFhY2pzbnphIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyNzg1NzMsImV4cCI6MjA5ODg1NDU3M30.7_dlsC-KEsBIhU2xjd5OLf5-o_EbWm3aI2KtgHkTSY4",
+      LIVEKIT_URL: "wss://phenix-coaching-5cbcb6fv.livekit.cloud",
+      LIVEKIT_TOKEN_ENDPOINT: "https://oifncoxlxwpdaacjsnza.supabase.co/functions/v1/livekit-token"
+    };
+
+    let supabaseClient = null;
+    if (window.supabase && CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY) {
+      supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    }
+
+    /* ================================================================
+       SPLASH
+    ================================================================ */
+    (function splash() {
+      const el = document.getElementById('splash');
+      setTimeout(() => el.classList.add('hide'), 1800);
+    })();
+
+    /* ================================================================
+       AUTH — Gestion des comptes (Supabase)
+    ================================================================ */
+    let currentUser = null;
+
+    function updateAuthUI(session) {
+      const badge = document.getElementById('nav-member-badge');
+      const logoutBtn = document.getElementById('nav-logout-btn');
+      const statusText = document.getElementById('auth-status-text');
+      const joinBtn = document.getElementById('main-join-btn');
+
+      if (session && session.user) {
+        currentUser = session.user;
+        const name = session.user.user_metadata?.full_name || session.user.email || 'Élève';
+        badge.textContent = '👤 ' + name;
+        badge.classList.add('show');
+        logoutBtn.classList.add('show');
+        statusText.textContent = 'Connecté en tant que ' + name;
+        statusText.style.color = 'var(--flare)';
+        joinBtn.textContent = '🔥 Rejoindre la séance';
+        joinBtn.disabled = false;
+        joinBtn.className = 'btn-join';
+      } else {
+        currentUser = null;
+        badge.classList.remove('show');
+        logoutBtn.classList.remove('show');
+        statusText.textContent = 'Connecte-toi pour rejoindre';
+        statusText.style.color = '';
+        joinBtn.textContent = '🔐 Se connecter';
+        joinBtn.className = 'btn-join btn-secondary';
+        joinBtn.disabled = false;
+      }
+    }
+
+    if (supabaseClient) {
+      supabaseClient.auth.getSession().then(({ data }) => updateAuthUI(data.session));
+      supabaseClient.auth.onAuthStateChange((_event, session) => updateAuthUI(session));
+    }
+
+    document.getElementById('nav-logout-btn').addEventListener('click', async () => {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      if (typeof lkResetToPrejoin === 'function') lkResetToPrejoin();
+    });
+
+    /* ================================================================
+       MODALE AUTH
+    ================================================================ */
+    const authModal = document.getElementById('auth-modal');
+    const modalError = document.getElementById('modal-error');
+
+    function showModalError(msg) {
+      modalError.textContent = msg;
+      modalError.classList.add('show');
+    }
+
+    function clearModalError() {
+      modalError.textContent = '';
+      modalError.classList.remove('show');
+    }
+
+    function openAuthModal() {
+      authModal.classList.add('open');
+      clearModalError();
+      document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.modal-tab[data-tab="login"]').classList.add('active');
+      document.getElementById('modal-login-form').style.display = 'flex';
+      document.getElementById('modal-signup-form').style.display = 'none';
+    }
+
+    function closeAuthModal() {
+      authModal.classList.remove('open');
+    }
+
+    document.getElementById('modal-close-btn').addEventListener('click', closeAuthModal);
+    authModal.addEventListener('click', (e) => {
+      if (e.target === authModal) closeAuthModal();
+    });
+
+    document.querySelectorAll('.modal-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        clearModalError();
+        const isLogin = tab.dataset.tab === 'login';
+        document.getElementById('modal-login-form').style.display = isLogin ? 'flex' : 'none';
+        document.getElementById('modal-signup-form').style.display = isLogin ? 'none' : 'flex';
+      });
+    });
+
+    document.getElementById('modal-signup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearModalError();
+      const fullName = document.getElementById('modal-signup-name').value.trim();
+      const email = document.getElementById('modal-signup-email').value.trim();
+      const password = document.getElementById('modal-signup-password').value;
+      if (!supabaseClient) { showModalError('Supabase non configuré.'); return; }
+      const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: fullName } }
+      });
+      if (error) { showModalError(error.message); return; }
+      if (data.user) {
+        await supabaseClient.from('profiles').upsert({ id: data.user.id, full_name: fullName, email });
+      }
+      closeAuthModal();
+      showToast('✅ Compte créé ! Bienvenue.');
+      setTimeout(() => {
+        if (currentUser) triggerJoinCall();
+      }, 500);
+    });
+
+    document.getElementById('modal-login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearModalError();
+      const email = document.getElementById('modal-login-email').value.trim();
+      const password = document.getElementById('modal-login-password').value;
+      if (!supabaseClient) { showModalError('Supabase non configuré.'); return; }
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) { showModalError(error.message); return; }
+      closeAuthModal();
+      showToast('✅ Connecté !');
+      setTimeout(() => {
+        if (currentUser) triggerJoinCall();
+      }, 500);
+    });
+
+    /* ================================================================
+       BOUTON "REJOINDRE"
+    ================================================================ */
+    const mainJoinBtn = document.getElementById('main-join-btn');
+
+    mainJoinBtn.addEventListener('click', () => {
+      if (currentUser) {
+        triggerJoinCall();
+      } else {
+        openAuthModal();
+      }
+    });
+
+    /* ================================================================
+       ADMIN — Mode coach (Ctrl+Shift+A)
+    ================================================================ */
+    let isAdminMode = false;
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'a' && e.ctrlKey && e.shiftKey) {
+        e.preventDefault();
+        const pwd = prompt('Mot de passe admin :');
+        if (pwd === CONFIG.ADMIN_PASSWORD) {
+          isAdminMode = !isAdminMode;
+          document.body.classList.toggle('admin-mode', isAdminMode);
+          document.getElementById('admin-badge').classList.toggle('show', isAdminMode);
+          showToast(isAdminMode ? '🔓 Mode coach activé' : '🔒 Mode coach désactivé');
+          // Si on est en appel et qu'on active le mode coach, on pourrait recharger mais on laisse
+        } else if (pwd !== null) {
+          showToast('❌ Mot de passe incorrect.');
+        }
+      }
+    });
+
+    /* ================================================================
+       VISIO PHÉNIX (LiveKit)
+    ================================================================ */
+    (function initCall() {
+      const wrapEl = document.getElementById('live-frame-wrap');
+      if (!wrapEl) return;
+      const roomName = wrapEl.dataset.room;
+
+      const prejoinEl = document.getElementById('lk-prejoin');
+      const roomEl = document.getElementById('lk-room');
+      const errorEl = document.getElementById('lk-error');
+      const stageEl = document.getElementById('lk-stage');
+      const stageEmptyEl = document.getElementById('lk-stage-empty');
+      const stageNameEl = document.getElementById('lk-stage-name');
+      const filmstripEl = document.getElementById('lk-filmstrip');
+      const micBtn = document.getElementById('lk-mic-btn');
+      const camBtn = document.getElementById('lk-cam-btn');
+      const leaveBtn = document.getElementById('lk-leave-btn');
+      const timerOverlay = document.getElementById('lk-timer-overlay');
+
+      let lkRoom = null;
+      let lkIsCoach = false;
+      let lkTiles = new Map();
+      let lkSavedScrollY = 0;
+
+      window.lkResetToPrejoin = lkResetToPrejoin;
+
+      function lkShowError(msg) {
+        errorEl.textContent = msg;
+        errorEl.classList.add('show');
+      }
+
+      function lkIdentityLabel(identity) {
+        return identity.startsWith('Coach:') ? identity.slice(6) + ' (coach)' : identity;
+      }
+
+      function lkIsCoachIdentity(identity) {
+        return identity.startsWith('Coach:');
+      }
+
+      function lkRenderParticipant(participant) {
+        const isCoach = lkIsCoachIdentity(participant.identity);
+        const container = isCoach ? stageEl : (() => {
+          let tile = lkTiles.get(participant.identity);
+          if (!tile) {
+            tile = document.createElement('div');
+            tile.className = 'lk-tile';
+            const nameTag = document.createElement('div');
+            nameTag.className = 'lk-tile-name';
+            nameTag.textContent = lkIdentityLabel(participant.identity);
+            tile.appendChild(nameTag);
+            filmstripEl.appendChild(tile);
+            lkTiles.set(participant.identity, tile);
+          }
+          return tile;
+        })();
+
+        if (isCoach) {
+          stageEmptyEl.style.display = 'none';
+          stageNameEl.style.display = 'block';
+          stageNameEl.textContent = lkIdentityLabel(participant.identity);
+        }
+
+        participant.videoTrackPublications.forEach((pub) => {
+          if (pub.track && pub.isSubscribed) {
+            const el = pub.track.attach();
+            container.querySelectorAll('video').forEach(v => v.remove());
+            container.appendChild(el);
+          }
+        });
+      }
+
+      function lkRemoveParticipant(participant) {
+        const isCoach = lkIsCoachIdentity(participant.identity);
+        if (isCoach) {
+          stageEl.querySelectorAll('video').forEach(v => v.remove());
+          stageEmptyEl.style.display = 'block';
+          stageNameEl.style.display = 'none';
+        } else {
+          const tile = lkTiles.get(participant.identity);
+          if (tile) { tile.remove();
+            lkTiles.delete(participant.identity); }
+        }
+      }
+
+      window.triggerJoinCall = async function() {
+        if (!currentUser) {
+          openAuthModal();
+          return;
+        }
+        if (lkRoom) return;
+
+        const name = currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Élève';
+        errorEl.classList.remove('show');
+        mainJoinBtn.disabled = true;
+        mainJoinBtn.textContent = '⏳...';
+
+        // Vérifier si le mode admin est actif (pour le coach)
+        const isAdmin = document.body.classList.contains('admin-mode');
+        const identity = (isAdmin ? 'Coach:' : '') + name + '-' + Math.random().toString(36).slice(2, 6);
+
+        try {
+          const res = await fetch(CONFIG.LIVEKIT_TOKEN_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ roomName, participantName: identity }),
+          });
+          if (!res.ok) throw new Error('Jeton refusé (code ' + res.status + ').');
+          const { token, error } = await res.json();
+          if (error) throw new Error(error);
+
+          lkRoom = new LivekitClient.Room({ adaptiveStream: true, dynacast: true });
+          lkIsCoach = isAdmin;
+
+          lkRoom.on(LivekitClient.RoomEvent.TrackSubscribed, (track, pub, participant) => {
+            if (track.kind === 'video') {
+              lkRenderParticipant(participant);
+            } else if (track.kind === 'audio') {
+              const audioEl = track.attach();
+              audioEl.autoplay = true;
+              document.getElementById('lk-audio-sink')?.appendChild(audioEl);
+            }
+          });
+          lkRoom.on(LivekitClient.RoomEvent.TrackUnsubscribed, (track) => {
+            track.detach().forEach((el) => el.remove());
+          });
+          lkRoom.on(LivekitClient.RoomEvent.ParticipantDisconnected, (participant) => {
+            lkRemoveParticipant(participant);
+          });
+          lkRoom.on(LivekitClient.RoomEvent.DataReceived, (payload) => {
+            try {
+              const state = JSON.parse(new TextDecoder().decode(payload));
+              lkApplyTimerState(state);
+            } catch (e) {}
+          });
+          lkRoom.on(LivekitClient.RoomEvent.Disconnected, () => lkResetToPrejoin());
+
+          await lkRoom.connect(CONFIG.LIVEKIT_URL, token);
+          await lkRoom.localParticipant.setMicrophoneEnabled(true);
+          await lkRoom.localParticipant.setCameraEnabled(true);
+
+          if (lkIsCoach) {
+            lkRoom.localParticipant.videoTrackPublications.forEach((pub) => {
+              if (pub.track) {
+                stageEl.querySelectorAll('video').forEach(v => v.remove());
+                stageEl.appendChild(pub.track.attach());
+                stageEmptyEl.style.display = 'none';
+                stageNameEl.style.display = 'block';
+                stageNameEl.textContent = name + ' (coach)';
+              }
+            });
+            document.getElementById('lk-coach-panels').classList.add('show');
+            document.getElementById('lk-timer-admin').style.display = 'block';
+            ltPopulatePresetSelect();
+          } else {
+            lkRenderSelfInFilmstrip(name);
+          }
+
+          lkRoom.remoteParticipants.forEach((participant) => lkRenderParticipant(participant));
+
+          prejoinEl.style.display = 'none';
+          roomEl.classList.add('active');
+          lkSavedScrollY = window.scrollY;
+          document.body.classList.add('lk-call-active');
+
+          if (supabaseClient && currentUser) {
+            supabaseClient.from('attendance').insert({
+              user_id: currentUser.id,
+              session_label: new Date().toISOString().slice(0, 10) + ' — ' + roomName,
+              kind: 'joined'
+            }).then(({ error: e2 }) => { if (e2) console.warn('Suivi :', e2.message); });
+          }
+        } catch (err) {
+          console.error(err);
+          lkShowError(err.message || 'Impossible de rejoindre.');
+        } finally {
+          mainJoinBtn.disabled = false;
+          mainJoinBtn.textContent = currentUser ? '🔥 Rejoindre la séance' : '🔐 Se connecter';
+        }
+      };
+
+      function lkRenderSelfInFilmstrip(name) {
+        const tile = document.createElement('div');
+        tile.className = 'lk-tile';
+        const nameTag = document.createElement('div');
+        nameTag.className = 'lk-tile-name';
+        nameTag.textContent = name + ' (toi)';
+        tile.appendChild(nameTag);
+        lkRoom.localParticipant.videoTrackPublications.forEach((pub) => {
+          if (pub.track) tile.appendChild(pub.track.attach());
+        });
+        filmstripEl.appendChild(tile);
+        lkTiles.set(lkRoom.localParticipant.identity, tile);
+      }
+
+      function lkResetToPrejoin() {
+        if (lkRoom) lkRoom.disconnect();
+        lkRoom = null;
+        lkTiles.clear();
+        filmstripEl.innerHTML = '';
+        stageEl.querySelectorAll('video').forEach(v => v.remove());
+        stageEmptyEl.style.display = 'block';
+        stageNameEl.style.display = 'none';
+        timerOverlay.classList.remove('show');
+        roomEl.classList.remove('active');
+        document.body.classList.remove('lk-call-active');
+        document.getElementById('lk-coach-panels').classList.remove('show');
+        document.getElementById('lk-timer-admin').style.display = 'none';
+        lkStopMusic();
+        window.scrollTo(0, lkSavedScrollY || 0);
+        prejoinEl.style.display = 'flex';
+        document.getElementById('lk-audio-sink')?.remove();
+        const sink = document.createElement('div');
+        sink.id = 'lk-audio-sink';
+        sink.style.display = 'none';
+        wrapEl.appendChild(sink);
+        mainJoinBtn.disabled = false;
+        mainJoinBtn.textContent = currentUser ? '🔥 Rejoindre la séance' : '🔐 Se connecter';
+      }
+
+      micBtn.addEventListener('click', async () => {
+        if (!lkRoom) return;
+        const enabled = lkRoom.localParticipant.isMicrophoneEnabled;
+        await lkRoom.localParticipant.setMicrophoneEnabled(!enabled);
+        micBtn.classList.toggle('off', enabled);
+      });
+      camBtn.addEventListener('click', async () => {
+        if (!lkRoom) return;
+        const enabled = lkRoom.localParticipant.isCameraEnabled;
+        await lkRoom.localParticipant.setCameraEnabled(!enabled);
+        camBtn.classList.toggle('off', enabled);
+      });
+      leaveBtn.addEventListener('click', lkResetToPrejoin);
+
+      /* ===== TIMER ===== */
+      let ltSteps = [];
+      let ltRounds = 1;
+      let ltFlatQueue = [];
+      let ltState = null;
+      let ltIsEngineOwner = false;
+      let ltPresetsCache = [];
+
+      function ltFormatTime(sec) {
+        sec = Math.max(0, Math.ceil(sec));
+        return `${Math.floor(sec / 60).toString().padStart(2, '0')}:${Math.floor(sec % 60).toString().padStart(2, '0')}`;
+      }
+
+      async function ltPopulatePresetSelect() {
+        const select = document.getElementById('lk-preset-select');
+        if (!select) return;
+        const data = await saLoadSessions();
+        ltPresetsCache = data.presets;
+        if (data.presets.length === 0) {
+          select.innerHTML = '<option value="">Aucune séance</option>';
+          return;
+        }
+        select.innerHTML = data.presets.map((p) =>
+          `<option value="${p.id}">${p.name}</option>`).join('');
+        await ltSelectPreset(data.presets[0].id);
+      }
+
+      async function ltSelectPreset(presetId) {
+        const preset = ltPresetsCache.find((p) => p.id === presetId);
+        if (!preset) return;
+        ltSteps = preset.steps;
+        ltRounds = preset.rounds;
+        document.getElementById('lk-ta-rounds').value = ltRounds;
+        const preview = document.getElementById('lk-preset-preview');
+        preview.innerHTML = ltSteps.map((s, i) =>
+          `<div class="lk-ta-item"><b>${i+1}. ${s.name}</b><span>🔥${s.work}s 💤${s.rest}s</span></div>`
+        ).join('');
+      }
+
+      document.getElementById('lk-preset-select').addEventListener('change', (e) => ltSelectPreset(e.target.value));
+
+      function lkApplyTimerState(state) {
+        ltState = state;
+        lkRenderTimer();
+      }
+
+      function lkRenderTimer() {
+        if (!ltState || ltState.status === 'idle') {
+          timerOverlay.classList.remove('show', 'tw-work', 'tw-rest');
+          return;
+        }
+        timerOverlay.classList.add('show');
+        timerOverlay.classList.remove('tw-work', 'tw-rest');
+        timerOverlay.classList.add(ltState.itemPhase === 'rest' ? 'tw-rest' : 'tw-work');
+
+        let remaining;
+        if (ltState.status === 'paused') remaining = ltState.pausedRemaining;
+        else {
+          remaining = ltState.itemDuration - (Date.now() - ltState.phaseStartedAt) / 1000;
+          if (remaining < 0) remaining = 0;
+        }
+
+        document.getElementById('lk-timer-phase').textContent = ltState.itemPhase === 'rest' ? '💤 REPOS' : '🔥 TRAVAIL';
+        document.getElementById('lk-timer-name').textContent = ltState.itemName || '';
+        document.getElementById('lk-timer-count').textContent = ltFormatTime(remaining);
+      }
+
+      function ltBroadcast(state) {
+        ltState = state;
+        lkRenderTimer();
+        if (lkRoom) {
+          const bytes = new TextEncoder().encode(JSON.stringify(state));
+          lkRoom.localParticipant.publishData(bytes, { reliable: true });
+        }
+      }
+
+      function ltBuildQueue() {
+        ltFlatQueue = [];
+        for (let r = 0; r < ltRounds; r++) {
+          ltSteps.forEach((s) => {
+            ltFlatQueue.push({ name: s.name, phase: 'work', duration: s.work, round: r + 1 });
+            if (s.rest > 0) ltFlatQueue.push({ name: s.name, phase: 'rest', duration: s.rest, round: r + 1 });
+          });
+        }
+      }
+
+      function ltStateForIndex(idx) {
+        const item = ltFlatQueue[idx];
+        return { status: 'running', queueIndex: idx, itemName: item.name, itemPhase: item.phase,
+          itemDuration: item.duration, phaseStartedAt: Date.now(), round: item.round, totalRounds: ltRounds };
+      }
+
+      function ltAdvance() {
+        const nextIdx = (ltState.queueIndex || 0) + 1;
+        if (nextIdx >= ltFlatQueue.length) {
+          ltBroadcast({ status: 'idle' });
+          ltIsEngineOwner = false;
+          document.getElementById('lk-ta-run-controls').style.display = 'none';
+          return;
+        }
+        ltBroadcast(ltStateForIndex(nextIdx));
+      }
+
+      function ltStart() {
+        if (ltSteps.length === 0) { alert('Ajoute des exercices.'); return; }
+        ltBuildQueue();
+        ltIsEngineOwner = true;
+        ltBroadcast(ltStateForIndex(0));
+        document.getElementById('lk-ta-run-controls').style.display = 'flex';
+        document.getElementById('lk-ta-pause-btn').textContent = '⏸ Pause';
+      }
+
+      function ltTogglePause() {
+        if (!ltIsEngineOwner || !ltState) return;
+        if (ltState.status === 'running') {
+          const remaining = ltState.itemDuration - (Date.now() - ltState.phaseStartedAt) / 1000;
+          ltBroadcast({ ...ltState, status: 'paused', pausedRemaining: Math.max(0, remaining) });
+          document.getElementById('lk-ta-pause-btn').textContent = '▶ Reprendre';
+        } else if (ltState.status === 'paused') {
+          const newStartedAt = Date.now() - (ltState.itemDuration - ltState.pausedRemaining) * 1000;
+          ltBroadcast({ ...ltState, status: 'running', phaseStartedAt: newStartedAt });
+          document.getElementById('lk-ta-pause-btn').textContent = '⏸ Pause';
+        }
+      }
+
+      function ltStop() {
+        ltIsEngineOwner = false;
+        ltBroadcast({ status: 'idle' });
+        document.getElementById('lk-ta-run-controls').style.display = 'none';
+      }
+
+      document.getElementById('lk-ta-start-btn').addEventListener('click', ltStart);
+      document.getElementById('lk-ta-pause-btn').addEventListener('click', ltTogglePause);
+      document.getElementById('lk-ta-skip-btn').addEventListener('click', () => { if (ltIsEngineOwner) ltAdvance(); });
+      document.getElementById('lk-ta-stop-btn').addEventListener('click', ltStop);
+
+      setInterval(() => {
+        lkRenderTimer();
+        if (ltIsEngineOwner && ltState && ltState.status === 'running') {
+          const remaining = ltState.itemDuration - (Date.now() - ltState.phaseStartedAt) / 1000;
+          if (remaining <= 0) ltAdvance();
+        }
+      }, 500);
+
+      /* ===== MUSIQUE ===== */
+      const musicInput = document.getElementById('lk-music-input');
+      const musicIdleEl = document.getElementById('lk-music-idle');
+      const musicActiveEl = document.getElementById('lk-music-active');
+      const musicTitleEl = document.getElementById('lk-music-title');
+      const musicPlayBtn = document.getElementById('lk-music-play-btn');
+      const musicStopBtn = document.getElementById('lk-music-stop-btn');
+      const musicVolumeInput = document.getElementById('lk-music-volume');
+      const musicEl = document.getElementById('lk-music-el');
+      let musicAudioCtx = null;
+      let musicGainNode = null;
+      let musicPublication = null;
+
+      async function lkPublishMusic(file, autoplay = true) {
+        if (!lkRoom) return;
+        musicEl.src = URL.createObjectURL(file);
+        musicAudioCtx = new(window.AudioContext || window.webkitAudioContext)();
+        const source = musicAudioCtx.createMediaElementSource(musicEl);
+        musicGainNode = musicAudioCtx.createGain();
+        musicGainNode.gain.value = (parseInt(musicVolumeInput.value, 10) || 50) / 100;
+        const destination = musicAudioCtx.createMediaStreamDestination();
+        source.connect(musicGainNode);
+        musicGainNode.connect(destination);
+        musicGainNode.connect(musicAudioCtx.destination);
+        if (autoplay) await musicEl.play();
+        const track = destination.stream.getAudioTracks()[0];
+        musicPublication = await lkRoom.localParticipant.publishTrack(track, { name: 'musique-coach' });
+        musicTitleEl.textContent = file.name;
+        musicIdleEl.style.display = 'none';
+        musicActiveEl.style.display = 'block';
+        musicPlayBtn.textContent = autoplay ? '⏸' : '▶';
+      }
+
+      function lkStopMusic() {
+        musicEl.pause();
+        musicEl.removeAttribute('src');
+        if (musicPublication && lkRoom) {
+          lkRoom.localParticipant.unpublishTrack(musicPublication.track);
+          musicPublication = null;
+        }
+        if (musicAudioCtx) { musicAudioCtx.close().catch(() => {});
+          musicAudioCtx = null; }
+        musicIdleEl.style.display = 'block';
+        musicActiveEl.style.display = 'none';
+        musicInput.value = '';
+      }
+
+      musicInput.addEventListener('change', (e) => { if (e.target.files[0]) lkPublishMusic(e.target.files[0]); });
+      musicPlayBtn.addEventListener('click', () => {
+        if (musicEl.paused) { musicEl.play();
+          musicPlayBtn.textContent = '⏸'; } else { musicEl.pause();
+          musicPlayBtn.textContent = '▶'; }
+      });
+      musicStopBtn.addEventListener('click', lkStopMusic);
+      musicVolumeInput.addEventListener('input', () => {
+        if (musicGainNode) musicGainNode.gain.value = parseInt(musicVolumeInput.value, 10) / 100;
+      });
+
+      /* ===== CHARGEMENT DES SÉANCES (Supabase) ===== */
+      async function saLoadSessions() {
+        if (!supabaseClient) return { presets: [] };
+        const { data, error } = await supabaseClient.from('phenix_sessions')
+          .select('*').order('updated_at', { ascending: false });
+        if (error) return { presets: [] };
+        return {
+          presets: data.map((row) => ({
+            id: row.id,
+            name: row.name,
+            steps: row.steps || [],
+            rounds: row.rounds || 1,
+            hasMusic: row.has_music,
+            musicName: row.music_name,
+            musicPath: row.music_path
+          }))
+        };
+      }
+    })();
+
+    /* ================================================================
+       TOAST
+    ================================================================ */
+    function showToast(msg) {
+      const existing = document.getElementById('toast-msg');
+      if (existing) existing.remove();
+      const toast = document.createElement('div');
+      toast.id = 'toast-msg';
+      toast.style.cssText =
+        'position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--ink-3); color:var(--paper); border:1px solid rgba(255,255,255,0.15); padding:12px 18px; border-radius:12px; font-size:13px; z-index:999; max-width:90vw; text-align:center; transition:0.3s;';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Sink audio
+    (function ensureAudioSink() {
+      if (!document.getElementById('lk-audio-sink')) {
+        const sink = document.createElement('div');
+        sink.id = 'lk-audio-sink';
+        sink.style.display = 'none';
+        document.getElementById('live-frame-wrap').appendChild(sink);
+      }
+    })();
+  </script>
+
+</body>
+</html>
